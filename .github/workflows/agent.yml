@@ -98,7 +98,9 @@ jobs:
         run: |
           f="${RUNNER_TEMP}/claude-execution-output.json"
           if [ -f "$f" ]; then
-            gcloud storage cp "$f" "gs://betting-lab-logs-502015/transcriptions/$(date -u +%F)/${GITHUB_RUN_ID}-${ROLE}.json"
+            name="transcriptions/$(date -u +%F)/${GITHUB_RUN_ID}-${ROLE}.json"
+            # envoi par l'API : seul le droit de création est nécessaire (pas de lecture)
+            curl -sf -X POST --data-binary @"$f" -H "Content-Type: application/json"               -H "Authorization: Bearer $(gcloud auth print-access-token)"               "https://storage.googleapis.com/upload/storage/v1/b/betting-lab-logs-502015/o?uploadType=media&name=${name//\//%2F}" > /dev/null               && echo "transcription envoyée" || { echo "envoi de la transcription échoué"; exit 1; }
           else
             echo "pas de transcription à envoyer"
           fi
@@ -128,4 +130,6 @@ jobs:
       - name: Patch rejeté vers le bucket privé
         if: steps.push.outputs.code == '3'
         continue-on-error: true
-        run: gcloud storage cp /tmp/rejected.patch "gs://betting-lab-logs-502015/rejected/$(date -u +%F)/${GITHUB_RUN_ID}.patch"
+        run: |
+          name="rejected/$(date -u +%F)/${GITHUB_RUN_ID}.patch"
+          curl -sf -X POST --data-binary @/tmp/rejected.patch -H "Content-Type: text/plain"             -H "Authorization: Bearer $(gcloud auth print-access-token)"             "https://storage.googleapis.com/upload/storage/v1/b/betting-lab-logs-502015/o?uploadType=media&name=${name//\//%2F}" > /dev/null
