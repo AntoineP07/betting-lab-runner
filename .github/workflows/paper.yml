@@ -1,0 +1,46 @@
+name: paper
+
+# Trader de papier : fait tourner les candidats GELÉS à l'heure réelle et enregistre leurs paris.
+# Aucun LLM, aucun token. C'est l'horloge de confiance du dépôt (voir judge/README.md).
+on:
+  schedule:
+    - cron: "35 * * * *"      # 15 min après le relevé de cotes horaire (:20)
+  workflow_dispatch:
+
+concurrency:
+  group: lab-paper
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  paper:
+    # Désactivé tant qu'aucun candidat n'est gelé : un job ignoré ne consomme aucune minute.
+    # Activer avec : gh variable set PAPER_ENABLED --body true -R AntoineP07/betting-lab-runner
+    if: ${{ vars.PAPER_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: AntoinePinto/betting-lab
+          token: ${{ secrets.LAB_TOKEN }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_JUDGE_SA_KEY }}
+      - name: Paris de papier
+        run: python -m judge.paper
+      - name: Enregistrement
+        env:
+          GH_TOKEN: ${{ secrets.LAB_TOKEN }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/AntoinePinto/betting-lab.git"
+          bash scripts/push.sh "paper : paris enregistrés $(date -u +%F\ %H:%M)"
