@@ -88,7 +88,7 @@ jobs:
             git push (le workflow pousse après contrôle) ; termine par une note de passation dans journal/.
           claude_args: |
             --max-turns 150
-            --allowedTools "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch,Agent,Bash(python *),Bash(python3 *),Bash(pip install *),Bash(pytest *),Bash(git add *),Bash(git commit *),Bash(git status*),Bash(git log *),Bash(git diff *),Bash(git show *),Bash(git rm *),Bash(cp *),Bash(ls *),Bash(cat *),Bash(head *),Bash(tail *),Bash(wc *),Bash(mkdir *),Bash(sort *),Bash(jq *),Bash(date *)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch,Agent,Bash(python *),Bash(python3 *),Bash(pip install *),Bash(pytest *),Bash(git add *),Bash(git commit *),Bash(git status*),Bash(git log *),Bash(git diff *),Bash(git show *),Bash(git rm *),Bash(cp *),Bash(cd *),Bash(echo *),Bash(grep *),Bash(sed *),Bash(find *),Bash(awk *),Bash(od *),Bash(cut *),Bash(diff *),Bash(mv *),Bash(rm *),Bash(touch *),Bash(pip list*),Bash(pip show*),Bash(ls *),Bash(cat *),Bash(head *),Bash(tail *),Bash(wc *),Bash(mkdir *),Bash(sort *),Bash(jq *),Bash(date *)"
 
       - name: Transcription vers le bucket privé
         if: steps.ctx.outputs.stop != '1' && always()
