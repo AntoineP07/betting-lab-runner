@@ -1,0 +1,30 @@
+name: usage-test
+
+# Test ponctuel : le jeton de `claude setup-token` permet-il de lire l'usage ? Seul le code HTTP est affiché ;
+# la réponse part dans le bucket privé.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_EXPLORER_SA_KEY }}
+      - name: Appel de l'endpoint d'usage
+        env:
+          TOK: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          code=$(curl -s -o /tmp/u.json -w "%{http_code}" https://api.anthropic.com/api/oauth/usage \
+            -H "Authorization: Bearer $TOK" -H "anthropic-beta: oauth-2025-04-20" -H "User-Agent: claude-code/usage-check")
+          echo "HTTP $code"
+          name="usage-test/${GITHUB_RUN_ID}-http${code}.json"
+          curl -sf -X POST --data-binary @/tmp/u.json -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+            "https://storage.googleapis.com/upload/storage/v1/b/betting-lab-logs-502015/o?uploadType=media&name=${name//\//%2F}" > /dev/null \
+            && echo "réponse déposée dans le bucket"
