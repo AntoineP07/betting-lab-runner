@@ -7,9 +7,9 @@ name: agent
 # supprime des lignes ; pour tout arrêter, crée un fichier STOP à la racine.
 on:
   schedule:
-    - cron: "17 */3 * * *"   # explorateur, 8 fois par jour
-    - cron: "41 3,15 * * *"  # sceptique, 2 fois par jour
-    - cron: "23 21 * * *"    # bibliothécaire, tous les jours
+    - cron: "17 */2 * * *"   # explorateur, 12 fois par jour
+    - cron: "41 */8 * * *"   # sceptique, 3 fois par jour
+    - cron: "23 9,21 * * *"  # bibliothécaire, 2 fois par jour
     - cron: "53 8 * * *"     # ingénieur, tous les jours
   workflow_dispatch:
     inputs:
@@ -48,8 +48,8 @@ jobs:
           SCHEDULE: ${{ github.event.schedule }}
         run: |
           case "$SCHEDULE" in
-            "41 3,15 * * *") ROLE=skeptic ;;
-            "23 21 * * *") ROLE=librarian ;;
+            "41 */8 * * *") ROLE=skeptic ;;
+            "23 9,21 * * *") ROLE=librarian ;;
             "53 8 * * *") ROLE=engineer ;;
             *) ROLE="${INPUT_ROLE:-explorer}" ;;
           esac
