@@ -1,0 +1,44 @@
+name: ext-data
+
+# Charge les CSV publics de football-data.co.uk dans BigQuery (betting_lab_scratch.ext_footballdata).
+# Les logs publics n'affichent que des comptes de lignes. mode=all : toutes les saisons ; recent : 2 dernières.
+on:
+  schedule:
+    - cron: "10 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "all | recent"
+        default: "recent"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-ext-data
+  cancel-in-progress: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: AntoinePinto/betting-lab
+          token: ${{ secrets.LAB_TOKEN }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_EXPLORER_SA_KEY }}
+      - name: Chargement
+        env:
+          MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$MODE" = "all" ]; then python -m lib.ext_footballdata --all; else python -m lib.ext_footballdata; fi
