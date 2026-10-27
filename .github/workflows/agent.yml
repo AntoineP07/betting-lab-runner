@@ -54,6 +54,7 @@ jobs:
             *) ROLE="${INPUT_ROLE:-explorer}" ;;
           esac
           echo "role=$ROLE" >> "$GITHUB_OUTPUT"
+          echo "now=$(date -u +%Y-%m-%dT%H:%MZ)" >> "$GITHUB_OUTPUT"
           if [ -f STOP ]; then echo "stop=1" >> "$GITHUB_OUTPUT"; echo "STOP présent : session ignorée"; fi
 
       - uses: actions/setup-python@v5
@@ -83,6 +84,8 @@ jobs:
             Tu es l'agent « ${{ steps.ctx.outputs.role }} » de betting-lab. Le dépôt est déjà cloné dans le
             dossier courant. Lis CLAUDE.md (il importe AGENTS.md et CHARTER.md), puis suis le déroulé
             d'AGENTS.md. Ton rôle est décrit dans .claude/agents/${{ steps.ctx.outputs.role }}.md.
+            Date et heure UTC réelles : ${{ steps.ctx.outputs.now }}. C'est la seule source de vérité pour les noms de fichiers,
+            les dossiers research/, les notes journal/ et les champs ts du ledger : ne déduis jamais la date des fichiers existants.
             ${{ inputs.focus }}
             Contraintes d'exécution : une seule unité de travail ; commits locaux en français ; AUCUN
             git push (le workflow pousse après contrôle) ; termine par une note de passation dans journal/.
