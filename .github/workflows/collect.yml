@@ -1,0 +1,49 @@
+name: collect
+
+# Relance les collecteurs écrits par les agents (dépôt privé, collectors/<nom>/), sans LLM ni token Claude.
+# C'est ce qui permet aux agents de constituer une série dans le temps entre deux sessions.
+# Les journaux n'affichent que des comptes ; l'état de chaque passage est dans BigQuery (collector_runs).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: lab-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: AntoinePinto/betting-lab
+          token: ${{ secrets.LAB_TOKEN }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Y a-t-il des collecteurs ?
+        id: any
+        run: |
+          n=$(ls -d collectors/*/meta.json 2>/dev/null | wc -l)
+          if [ -f STOP ]; then n=0; echo "STOP présent"; fi
+          echo "collecteurs : $n"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        if: steps.any.outputs.n != '0'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.any.outputs.n != '0'
+        run: pip install -q -r requirements.txt
+      - uses: google-github-actions/auth@v2
+        if: steps.any.outputs.n != '0'
+        with:
+          credentials_json: ${{ secrets.GCP_EXPLORER_SA_KEY }}
+      - name: Collecte
+        if: steps.any.outputs.n != '0'
+        run: python scripts/collect.py

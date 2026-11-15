@@ -16,9 +16,8 @@ permissions:
 
 jobs:
   paper:
-    # Désactivé tant qu'aucun candidat n'est gelé : un job ignoré ne consomme aucune minute.
-    # Activer avec : gh variable set PAPER_ENABLED --body true -R AntoineP07/betting-lab-runner
-    if: ${{ vars.PAPER_ENABLED == 'true' }}
+    # Tourne en permanence (dépôt public : minutes gratuites) ; sans candidat, le job s'arrête après le clone.
+    # Avant le 15/11/2026 il fallait que l'humain l'active à la main au premier gel.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,19 +27,31 @@ jobs:
           token: ${{ secrets.LAB_TOKEN }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Y a-t-il un candidat ?
+        id: any
+        run: |
+          n=$(ls candidates/*/FREEZE_REQUEST candidates/*/freeze.json 2>/dev/null | wc -l)
+          echo "candidats : $n"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-python@v5
+        if: steps.any.outputs.n != '0'
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements.txt
+      # judge/requirements.txt est protégé par le garde-fou : un agent ne peut pas y glisser une dépendance.
+      - if: steps.any.outputs.n != '0'
+        run: pip install -q -r judge/requirements.txt
       - uses: google-github-actions/auth@v2
+        if: steps.any.outputs.n != '0'
         with:
           credentials_json: ${{ secrets.GCP_JUDGE_SA_KEY }}
       - name: Paris de papier
+        if: steps.any.outputs.n != '0'
         run: python -m judge.paper
       - name: Enregistrement
+        if: steps.any.outputs.n != '0'
         env:
           GH_TOKEN: ${{ secrets.LAB_TOKEN }}
         run: |
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/AntoinePinto/betting-lab.git"
-          bash scripts/push.sh "paper : paris enregistrés $(date -u +%F\ %H:%M)"
+          bash scripts/push.sh "paper : paris enregistrés $(date -u +%F\ %H:%M)" --only candidates   # rien d'autre ne peut atteindre main depuis ce job
