@@ -129,7 +129,8 @@ jobs:
 
       - name: Demandes à l'humain (outbox/ -> issues)
         id: loop
-        if: steps.push.outputs.code == '0'
+        # une étape ignorée a une sortie nulle, et null == '0' est vrai dans une expression GitHub : tester aussi sa conclusion
+        if: steps.push.conclusion == 'success' && steps.push.outputs.code == '0'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.LAB_TOKEN }}
@@ -138,7 +139,7 @@ jobs:
       # Les issues du dépôt privé sont créées avec LAB_TOKEN, donc au nom de son propriétaire : GitHub ne lui
       # envoie pas de courriel. Ce commentaire, sans aucun contenu, part du dépôt runner pour le prévenir.
       - name: Prévenir l'humain (sans contenu)
-        if: steps.loop.outputs.created != '' && steps.loop.outputs.created != '0'
+        if: steps.loop.conclusion == 'success' && steps.loop.outputs.created != '' && steps.loop.outputs.created != '0'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
